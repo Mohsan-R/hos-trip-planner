@@ -1,11 +1,12 @@
 import React from 'react';
 
 export default function TripSummary({ trip }) {
-  if (!trip) return null;
+  if (!trip || !trip.summary) return null;
 
-  const distanceMiles = (trip.distance * 0.000621371).toFixed(1);
-  const hours = Math.floor(trip.duration / 3600);
-  const minutes = Math.floor((trip.duration % 3600) / 60);
+  const distanceMiles = (trip.summary.distance * 0.000621371).toFixed(1);
+  const hours = Math.floor(trip.summary.driving_hours / 3600);
+  const minutes = Math.floor((trip.summary.driving_hours % 3600) / 60);
+  const totalTripTime = trip.summary.total_trip_time.toFixed(1);
 
   return (
     <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
@@ -20,6 +21,11 @@ export default function TripSummary({ trip }) {
         <div className="flex justify-between pb-2 border-b">
           <span className="font-medium text-gray-500">Estimated Driving Time</span>
           <span className="font-bold">{hours}h {minutes}m</span>
+        </div>
+
+        <div className="flex justify-between pb-2 border-b text-blue-700">
+          <span className="font-medium text-blue-600">Total HOS Trip Time</span>
+          <span className="font-bold">{totalTripTime} hours</span>
         </div>
 
         <div className="mt-4">

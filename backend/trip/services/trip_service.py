@@ -23,7 +23,11 @@ class TripService:
         # 2. Route
         route_result = self.router.calculate_route(current_coords, pickup_coords, dropoff_coords)
         
-        # 3. Save Trip
+        # 3. Generate HOS Timeline
+        from hos.services.hos_engine import HOSEngine
+        timeline_data = HOSEngine.generate_timeline(route_result['legs'], data['current_cycle_hours'])
+        
+        # 4. Save Trip
         try:
             trip = Trip.objects.create(
                 current_location=data['current_location'],
@@ -32,20 +36,27 @@ class TripService:
                 current_cycle_hours=data['current_cycle_hours'],
                 distance=route_result['distance'],
                 driving_time=route_result['duration'],
-                route_geometry=route_result['geometry']
+                route_geometry=route_result['geometry'],
+                timeline=timeline_data
             )
         except Exception:
             raise DatabaseError()
         
         # 4. Return combined normalized data
+        total_trip_time = sum(e.get('duration', 0) for e in timeline_data)
+        
         return {
             "id": trip.id,
             "current_location": trip.current_location,
             "pickup_location": trip.pickup_location,
             "dropoff_location": trip.dropoff_location,
             "current_cycle_hours": trip.current_cycle_hours,
-            "distance": trip.distance,
-            "duration": trip.driving_time,
+            "summary": {
+                "distance": trip.distance,
+                "driving_hours": trip.driving_time,
+                "total_trip_time": total_trip_time
+            },
             "geometry": trip.route_geometry,
+            "timeline": trip.timeline,
             "legs": route_result['legs']
         }

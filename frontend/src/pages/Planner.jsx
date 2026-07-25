@@ -42,7 +42,7 @@ export default function Planner() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col p-6">
-      <h1 className="text-3xl font-bold text-gray-800 mb-6">Phase 2 Route Planner</h1>
+      <h1 className="text-3xl font-bold text-gray-800 mb-6">Phase 3 HOS Planner</h1>
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Form Column */}
         <div className="w-full lg:w-1/3 flex flex-col gap-6">

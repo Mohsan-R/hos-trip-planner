@@ -38,7 +38,20 @@ class TripInputSerializer(serializers.Serializer):
 
 class TripResponseSerializer(serializers.ModelSerializer):
     legs = serializers.JSONField(read_only=True)
+    summary = serializers.SerializerMethodField()
 
     class Meta:
         model = Trip
-        fields = ['id', 'current_location', 'pickup_location', 'dropoff_location', 'current_cycle_hours', 'distance', 'driving_time', 'route_geometry', 'legs', 'created_at']
+        fields = ['id', 'current_location', 'pickup_location', 'dropoff_location', 'current_cycle_hours', 'summary', 'route_geometry', 'timeline', 'legs', 'created_at']
+
+    def get_summary(self, obj):
+        total_trip_time = 0.0
+        if obj.timeline:
+            for event in obj.timeline:
+                total_trip_time += event.get('duration', 0.0)
+        
+        return {
+            "distance": obj.distance,
+            "driving_hours": obj.driving_time,
+            "total_trip_time": total_trip_time
+        }

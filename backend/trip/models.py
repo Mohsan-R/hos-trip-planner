@@ -8,6 +8,7 @@ class Trip(models.Model):
     distance = models.FloatField(null=True, blank=True)
     driving_time = models.FloatField(null=True, blank=True)
     route_geometry = models.TextField(null=True, blank=True) # Encoded polyline is string
+    timeline = models.JSONField(null=True, blank=True) # Store generated HOS events
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
