@@ -9,3 +9,4 @@ class DriverState:
     drive_since_break: float = 0.0
     current_time: float = 0.0 # Time elapsed in simulation in hours
     current_location: str = "Unknown"
+    sleeper_berth_pending: bool = False  # True after 7h sleeper, waiting for 2h split partner

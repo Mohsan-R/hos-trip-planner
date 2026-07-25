@@ -25,8 +25,10 @@ class TripService:
         
         # 3. Generate HOS Timeline
         from hos.services.hos_engine import HOSEngine
-        timeline_data = HOSEngine.generate_timeline(route_result['legs'], data['current_cycle_hours'])
-        
+        hos_result = HOSEngine.generate_timeline(route_result['legs'], data['current_cycle_hours'])
+        timeline_data = hos_result['timeline']
+        log_sheets = hos_result['log_sheets']
+
         # 4. Save Trip
         try:
             trip = Trip.objects.create(
@@ -41,10 +43,9 @@ class TripService:
             )
         except Exception:
             raise DatabaseError()
-        
-        # 4. Return combined normalized data
+
         total_trip_time = sum(e.get('duration', 0) for e in timeline_data)
-        
+
         return {
             "id": trip.id,
             "current_location": trip.current_location,
@@ -58,5 +59,6 @@ class TripService:
             },
             "geometry": trip.route_geometry,
             "timeline": trip.timeline,
+            "log_sheets": log_sheets,
             "legs": route_result['legs']
         }

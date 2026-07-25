@@ -43,7 +43,7 @@ class RuleEngineTests(TestCase):
 class HOSEngineIntegrationTests(TestCase):
     def test_100_mile_trip_no_break_no_fuel(self):
         legs = [{"from": "A", "to": "B", "distance": 100 / 0.000621371, "duration": 2 * 3600}]
-        timeline = HOSEngine.generate_timeline(legs, initial_cycle_hours=0.0)
+        timeline = HOSEngine.generate_timeline(legs, initial_cycle_hours=0.0)["timeline"]
         events = [e["event_type"] for e in timeline]
         self.assertIn("PICKUP", events)
         self.assertIn("DRIVE", events)
@@ -52,14 +52,14 @@ class HOSEngineIntegrationTests(TestCase):
 
     def test_600_mile_trip_break_only(self):
         legs = [{"from": "A", "to": "B", "distance": 600 / 0.000621371, "duration": 10 * 3600}]
-        timeline = HOSEngine.generate_timeline(legs, initial_cycle_hours=0.0)
+        timeline = HOSEngine.generate_timeline(legs, initial_cycle_hours=0.0)["timeline"]
         events = [e["event_type"] for e in timeline]
         self.assertIn("BREAK", events)
         self.assertNotIn("FUEL", events)
 
     def test_1050_mile_trip_fuel_inserted(self):
         legs = [{"from": "A", "to": "B", "distance": 1050 / 0.000621371, "duration": 16 * 3600}]
-        timeline = HOSEngine.generate_timeline(legs, initial_cycle_hours=0.0)
+        timeline = HOSEngine.generate_timeline(legs, initial_cycle_hours=0.0)["timeline"]
         events = [e["event_type"] for e in timeline]
         self.assertIn("FUEL", events)
 
@@ -68,7 +68,7 @@ class HOSEngineIntegrationTests(TestCase):
             {"from": "Current", "to": "Pickup", "distance": 0, "duration": 0},
             {"from": "Pickup", "to": "Dropoff", "distance": 100 / 0.000621371, "duration": 2 * 3600}
         ]
-        timeline = HOSEngine.generate_timeline(legs, initial_cycle_hours=0.0)
+        timeline = HOSEngine.generate_timeline(legs, initial_cycle_hours=0.0)["timeline"]
         events = [e["event_type"] for e in timeline]
         self.assertEqual(events[0], "PICKUP") # First thing is pickup
 
@@ -82,9 +82,9 @@ class HOSEngineIntegrationTests(TestCase):
             {"from": "Current", "to": "Pickup", "distance": 270 / 0.000621371, "duration": 4.5 * 3600},
             {"from": "Pickup", "to": "Dropoff", "distance": 10 / 0.000621371, "duration": 0.5 * 3600}
         ]
-        timeline = HOSEngine.generate_timeline(legs, initial_cycle_hours=65.0)
+        timeline = HOSEngine.generate_timeline(legs, initial_cycle_hours=65.0)["timeline"]
         events = [e["event_type"] for e in timeline]
-        
+
         # Verify that REST happens right before PICKUP
         rest_idx = events.index("REST")
         pickup_idx = events.index("PICKUP")
@@ -93,9 +93,9 @@ class HOSEngineIntegrationTests(TestCase):
     def test_cycle_at_69_hours_immediate_restart(self):
         # Cycle is at 69. Drive limit is 1 hour before cycle hits 70.
         legs = [{"from": "A", "to": "B", "distance": 300 / 0.000621371, "duration": 5 * 3600}]
-        timeline = HOSEngine.generate_timeline(legs, initial_cycle_hours=69.0)
+        timeline = HOSEngine.generate_timeline(legs, initial_cycle_hours=69.0)["timeline"]
         events = [e["event_type"] for e in timeline]
-        
+
         # Timeline should be: DRIVE(1h), REST(34h), DRIVE(4h), PICKUP(1h)
         self.assertEqual(events[0], "DRIVE")
         self.assertEqual(events[1], "REST")

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { tripApi } from '../services/tripApi';
 import TripMap from '../components/Map/TripMap';
 import TripSummary from '../components/Cards/TripSummary';
+import LogSheet from '../components/Cards/LogSheet';
 
 export default function Planner() {
   const [formData, setFormData] = useState({
@@ -73,6 +74,7 @@ export default function Planner() {
           </div>
           
           {tripResult && <TripSummary trip={tripResult} />}
+          {tripResult && <LogSheet logSheets={tripResult.log_sheets || []} />}
         </div>
         
         {/* Map Column */}

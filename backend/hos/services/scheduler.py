@@ -1,7 +1,8 @@
 from typing import List
 from common.constants import (
     FUEL_INTERVAL_MILES, FUEL_DURATION, PICKUP_DURATION, DROPOFF_DURATION,
-    BREAK_DURATION, OFF_DUTY_RESET, CYCLE_RESTART
+    BREAK_DURATION, OFF_DUTY_RESET, CYCLE_RESTART,
+    SLEEPER_BERTH_MIN, SLEEPER_SPLIT_MIN
 )
 from common.enums import DriverStatus, EventType
 from hos.domain.driver_state import DriverState
@@ -35,16 +36,25 @@ class Scheduler:
         if status in [DriverStatus.DRIVING, DriverStatus.ON_DUTY]:
             self.state.current_duty_hours += duration
             self.state.current_cycle_hours += duration
-            
+            self.state.drive_since_break += duration  # 8-hr break window counts all on-duty time, not just driving
+
         if status == DriverStatus.DRIVING:
             self.state.current_drive_hours += duration
-            self.state.drive_since_break += duration
 
         if status in [DriverStatus.OFF_DUTY, DriverStatus.SLEEPER]:
             if duration >= 34.0:
                 RuleEngine.reset_cycle_clock(self.state)
+                self.state.sleeper_berth_pending = False
             elif duration >= 10.0:
                 RuleEngine.reset_daily_clocks(self.state)
+                self.state.sleeper_berth_pending = False
+            elif status == DriverStatus.SLEEPER and duration >= SLEEPER_BERTH_MIN:
+                # First half of sleeper split (≥7h): mark pending, don't reset clocks yet
+                self.state.sleeper_berth_pending = True
+            elif self.state.sleeper_berth_pending and duration >= SLEEPER_SPLIT_MIN:
+                # Second half of sleeper split (≥2h): now apply full reset
+                RuleEngine.reset_daily_clocks(self.state)
+                self.state.sleeper_berth_pending = False
             elif duration >= 0.5:
                 RuleEngine.reset_break_clock(self.state)
             
@@ -83,13 +93,18 @@ class Scheduler:
                     self._add_event(DriverStatus.OFF_DUTY, EventType.BREAK, BREAK_DURATION, self.state.current_location, "30-Minute Break")
                     continue
                     
-                # 3. Need Rest?
+                # 3. Need Rest? Use sleeper berth split (7h+2h) if mid-trip, else full 10h reset
                 if RuleEngine.remaining_cycle(self.state) <= 0:
                     self._add_event(DriverStatus.OFF_DUTY, EventType.REST, CYCLE_RESTART, self.state.current_location, "34-Hour Restart")
                     continue
 
                 if RuleEngine.max_drive_available(self.state) <= 0 or RuleEngine.max_duty_available(self.state) <= 0:
-                    self._add_event(DriverStatus.OFF_DUTY, EventType.REST, OFF_DUTY_RESET, self.state.current_location, "10-Hour Reset")
+                    if not self.state.sleeper_berth_pending:
+                        # Use 7h sleeper berth as first split half
+                        self._add_event(DriverStatus.SLEEPER, EventType.REST, SLEEPER_BERTH_MIN, self.state.current_location, "Sleeper Berth (7h)")
+                    else:
+                        # Complete split with 2h off-duty
+                        self._add_event(DriverStatus.OFF_DUTY, EventType.REST, SLEEPER_SPLIT_MIN, self.state.current_location, "Sleeper Split (2h)")
                     continue
                     
                 # 4. Drive
