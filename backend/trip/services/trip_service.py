@@ -14,7 +14,7 @@ class TripService:
         self.geocoder = GeocodingService()
         self.router = RoutingService()
 
-    def create_trip(self, data: dict) -> dict:
+    def create_trip(self, data: dict, user=None) -> dict:
         # 1. Geocode with specific labels to match QA tests
         current_coords = self.geocoder.get_coordinates(data['current_location'], "Current location")
         pickup_coords = self.geocoder.get_coordinates(data['pickup_location'], "Pickup location")
@@ -32,6 +32,7 @@ class TripService:
         # 4. Save Trip
         try:
             trip = Trip.objects.create(
+                user=user,
                 current_location=data['current_location'],
                 pickup_location=data['pickup_location'],
                 dropoff_location=data['dropoff_location'],
@@ -39,8 +40,10 @@ class TripService:
                 distance=route_result['distance'],
                 driving_time=route_result['duration'],
                 route_geometry=route_result['geometry'],
-                timeline=timeline_data
+                timeline=timeline_data,
+                log_sheets=log_sheets
             )
+
         except Exception:
             raise DatabaseError()
 

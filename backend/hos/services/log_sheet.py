@@ -18,7 +18,6 @@ class LogSheetBuilder:
         if not timeline:
             return []
 
-        # Split any event that crosses a midnight boundary into per-day pieces.
         day_segments: Dict[int, List[Dict]] = {}
 
         for event in timeline:
@@ -48,6 +47,42 @@ class LogSheetBuilder:
                 })
 
                 cursor = seg_end
+
+        # Pad each day to 24h with OFF_DUTY before and after activity
+        for day_index, segments in day_segments.items():
+            segments.sort(key=lambda s: s["start_hour"])
+            padded = []
+
+            # Gap before first event
+            if segments[0]["start_hour"] > 0.001:
+                padded.append({
+                    "status": DriverStatus.OFF_DUTY.value,
+                    "event_type": "OFF_DUTY",
+                    "start_hour": 0.0,
+                    "end_hour": round(segments[0]["start_hour"], 4),
+                    "duration": round(segments[0]["start_hour"], 4),
+                    "location": segments[0]["location"],
+                    "description": "Off Duty",
+                    "distance": 0.0,
+                })
+
+            padded.extend(segments)
+
+            # Gap after last event
+            last_end = segments[-1]["end_hour"]
+            if last_end < HOURS_PER_DAY - 0.001:
+                padded.append({
+                    "status": DriverStatus.OFF_DUTY.value,
+                    "event_type": "OFF_DUTY",
+                    "start_hour": round(last_end, 4),
+                    "end_hour": HOURS_PER_DAY,
+                    "duration": round(HOURS_PER_DAY - last_end, 4),
+                    "location": segments[-1]["location"],
+                    "description": "Off Duty",
+                    "distance": 0.0,
+                })
+
+            day_segments[day_index] = padded
 
         return LogSheetBuilder._assemble_sheets(day_segments)
 
